@@ -1,4 +1,5 @@
 import { queryResponseSchema } from "../schema";
+import { APIError, APIValidationError } from "./common";
 
 const BASE_URL = "http://127.0.0.1:8000";
 
@@ -32,13 +33,17 @@ export async function querySingle(data: QuerySingleRequest) {
   });
 
   if (!response.ok) {
-    throw new Error(`Query failed: ${response.statusText}`);
+    if (response.status === 404) {
+      throw new APIError(response.status, "No documents found");
+    }
+    throw new APIError(response.status, `Query failed: ${response.statusText}`);
   }
 
   const json = await response.json();
   const safeParseResult = queryResponseSchema.safeParse(json);
   if (!safeParseResult.success) {
-    throw new Error(
+    throw new APIValidationError(
+      422,
       `Invalid query response: ${safeParseResult.error.errors.join(", ")}`,
     );
   }
@@ -46,9 +51,7 @@ export async function querySingle(data: QuerySingleRequest) {
   return safeParseResult.data;
 }
 
-export async function queryMultiple(
-  data: QueryMultipleRequest,
-): Promise<QueryResponse> {
+export async function queryMultiple(data: QueryMultipleRequest) {
   const response = await fetch(`${BASE_URL}/query_multiple`, {
     method: "POST",
     headers: {
@@ -59,10 +62,20 @@ export async function queryMultiple(
 
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error("No documents found");
+      throw new APIError(response.status, "No documents found");
     }
-    throw new Error(`Query failed: ${response.statusText}`);
+
+    throw new APIError(response.status, `Query failed: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  const safeParseResult = queryResponseSchema.safeParse(json);
+  if (!safeParseResult.success) {
+    throw new APIValidationError(
+      422,
+      `Invalid query response: ${safeParseResult.error.errors.join(", ")}`,
+    );
+  }
+
+  return safeParseResult.data;
 }

@@ -11,7 +11,8 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useToast } from "~/hooks/use-toast";
-import { querySingle } from "~/lib/api/query";
+import { getAllDocumentIds } from "~/lib/api/documents";
+import { queryMultiple, querySingle } from "~/lib/api/query";
 
 interface QueryResult {
   page_content: string;
@@ -39,9 +40,9 @@ export default function Query() {
   const [entityId, setEntityId] = useState("");
 
   // Multiple query state
-  // const [multiQuery, setMultiQuery] = useState("");
+  const [multiQuery, setMultiQuery] = useState("");
   // const [fileIds, setFileIds] = useState("");
-  // const [multiK, setMultiK] = useState("5");
+  const [multiK, setMultiK] = useState("5");
 
   const handleSingleQuery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,41 +81,42 @@ export default function Query() {
     }
   };
 
-  // const handleMultipleQuery = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setIsLoading(true);
+  const handleMultipleQuery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  //   try {
-  //     const response = await queryMultiple({
-  //       query: multiQuery,
-  //       file_ids: fileIds.split(",").map((id) => id.trim()),
-  //       k: parseInt(multiK),
-  //     });
+    const fileIds = await getAllDocumentIds();
+    try {
+      const response = await queryMultiple({
+        query: multiQuery,
+        file_ids: fileIds,
+        k: parseInt(multiK),
+      });
 
-  //     // Transform response to match QueryResult interface
-  //     const transformedResults = response.map(([doc, score]) => ({
-  //       ...doc,
-  //       similarity: score,
-  //     }));
+      // Transform response to match QueryResult interface
+      const transformedResults = response.map(([doc, score]) => ({
+        ...doc,
+        similarity: score,
+      }));
 
-  //     setResults(transformedResults);
-  //     toast({
-  //       title: "쿼리 성공",
-  //       description: "문서를 성공적으로 검색했습니다.",
-  //     });
-  //   } catch (error) {
-  //     toast({
-  //       title: "쿼리 실패",
-  //       description:
-  //         error instanceof Error
-  //           ? error.message
-  //           : "알 수 없는 에러가 발생했습니다.",
-  //       variant: "destructive",
-  //     });
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+      setResults(transformedResults);
+      toast({
+        title: "쿼리 성공",
+        description: "문서를 성공적으로 검색했습니다.",
+      });
+    } catch (error) {
+      toast({
+        title: "쿼리 실패",
+        description:
+          error instanceof Error
+            ? error.message
+            : "알 수 없는 에러가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -192,7 +194,7 @@ export default function Query() {
             </Card>
           </TabsContent>
 
-          {/* <TabsContent value="multiple">
+          <TabsContent value="multiple">
             <Card>
               <CardHeader>
                 <CardTitle>다중 파일 검색</CardTitle>
@@ -212,7 +214,7 @@ export default function Query() {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label htmlFor="fileIds">파일 ID 목록</Label>
                     <Input
                       id="fileIds"
@@ -221,7 +223,7 @@ export default function Query() {
                       placeholder="파일 ID를 쉼표로 구분하여 입력하세요"
                       required
                     />
-                  </div>
+                  </div> */}
                   <div className="space-y-2">
                     <Label htmlFor="multiK">결과 개수</Label>
                     <Input
@@ -239,7 +241,7 @@ export default function Query() {
                 </form>
               </CardContent>
             </Card>
-          </TabsContent> */}
+          </TabsContent>
         </Tabs>
 
         {results?.length > 0 && (
