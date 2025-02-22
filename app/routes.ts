@@ -5,4 +5,5 @@ export default [
   route("dashboard", "routes/dashboard.tsx"),
   route("documents", "routes/documents.tsx"),
   route("query", "routes/query.tsx"),
+  route("search", "routes/search.tsx"),
 ] satisfies RouteConfig;
