@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { generatePrompt, callModel } from "~/lib/api/model";
-import { querySingle } from "~/lib/api/query";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
+import { toast } from "~/hooks/use-toast";
+import { getAllDocumentIds } from "~/lib/api/documents";
+import { callModel, generatePrompt } from "~/lib/api/model";
+import { queryMultiple } from "~/lib/api/query";
 
 export default function Search() {
   const [query, setQuery] = useState("");
@@ -14,10 +16,13 @@ export default function Search() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    const ids = await getAllDocumentIds();
+
     try {
-      const result = await querySingle({
+      const result = await queryMultiple({
         query: query,
-        file_id: "1",
+        file_ids: ids,
         k: 1,
       });
 
@@ -28,9 +33,23 @@ export default function Search() {
         const prompt = await generatePrompt({ userQuery: query, pageContent });
         const answer = await callModel(prompt);
         setCompletion(answer);
+      } else {
+        setContext("");
+        setCompletion("");
+        toast({
+          title: "쿼리 실패",
+          description: "문서를 찾을 수 없습니다.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Search failed:", error);
+      // Show some toast
+      toast({
+        title: "쿼리 실패",
+        description: "Failed to search documents.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
